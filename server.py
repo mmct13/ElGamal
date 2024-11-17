@@ -72,7 +72,7 @@ def handle_client(client_socket):
                     # Store and broadcast the public key
                     clients[client_socket] = message_data['public_key']
                     broadcast_public_key(client_socket, message_data['public_key'])
-                    print(f"Received public key from client: {message_data['public_key']}")
+                    print(f"Clé publique reçue du clint : {message_data['public_key']}")
                 
                 elif message_data['type'] == 'message':
                     # Broadcast the encrypted message
@@ -91,19 +91,19 @@ def handle_client(client_socket):
         if client_socket in clients:
             del clients[client_socket]
         client_socket.close()
-        print("Client disconnected")
+        print("Client déconnecté")
 
 def start_server(host, port):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((host, port))
     server_socket.listen()
-    print(f"Server started on {host}:{port}")
-    print(f"Generated primes - q: {q}, g: {g}")
+    print(f"Serveur démarré sur {host}:{port}")
+    print(f"Nombres premiers générés - q: {q}, g: {g}")
     
     while True:
         client_socket, address = server_socket.accept()
-        print(f"Connection from {address}")
+        print(f"Nouvelle connexion depuis {address}")
         threading.Thread(target=handle_client, args=(client_socket,)).start()
 
 if __name__ == "__main__":
-    start_server("127.0.0.1", 12345)
+    start_server("192.168.1.9", 12345)

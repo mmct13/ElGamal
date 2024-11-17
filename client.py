@@ -145,12 +145,12 @@ class MessageBubble(customtkinter.CTkFrame):
         self.clear_text = clear_text
         self.encrypted_text = encrypted_text
         self.message_type = message_type
-        self.showing_encrypted = False
+        self.showing_encrypted = True
         
         # Message content
         self.message_label = customtkinter.CTkLabel(
             self,
-            text=f"{'Vous : ' if message_type == 'sent' else 'Ami'}: {clear_text}",
+            text=f"{'Vous : ' if message_type == 'sent' else 'Ami'}: {(clear_text if message_type == 'sent' else encrypted_text)}",
             wraplength=350,
             justify="left",
             text_color="white",
@@ -161,7 +161,7 @@ class MessageBubble(customtkinter.CTkFrame):
         # Toggle button
         self.toggle_button = customtkinter.CTkButton(
             self,
-            text="Show Encrypted",
+            text="Déchiffrer",
             command=self.toggle_display,
             width=100,
             height=25
@@ -172,7 +172,7 @@ class MessageBubble(customtkinter.CTkFrame):
         self.showing_encrypted = not self.showing_encrypted
         if self.showing_encrypted:
             self.message_label.configure(
-                text=f"{'Vous' if self.message_type == 'sent' else 'Ami'} (encrypted): {self.encrypted_text}"
+                text=f"{'Vous' if self.message_type == 'sent' else 'Ami'} (chiffré) : {self.encrypted_text}"
             )
             self.toggle_button.configure(text="Déchiffrer")
         else:
@@ -302,7 +302,7 @@ class ChatApp(customtkinter.CTk):
 if __name__ == "__main__":
     app = ChatApp()
     
-    server_host = "127.0.0.1"
+    server_host = "192.168.1.9"
     server_port = 12345
     
     connect_to_server(server_host, server_port, app)
