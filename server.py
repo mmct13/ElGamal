@@ -106,4 +106,4 @@ def start_server(host, port):
         threading.Thread(target=handle_client, args=(client_socket,)).start()
 
 if __name__ == "__main__":
-    start_server("192.168.1.9", 12345)
+    start_server("127.0.0.1", 12345)

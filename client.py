@@ -29,14 +29,16 @@ def power(a, b, c):
         b = int(b / 2)
     return x % c
 
-def encrypt(msg, q, h, g):
+def encrypt_number(msg, q, h, g):
+    """Encrypt a single number message"""
     k = gen_key(q)
     c1 = power(g, k, q)
     s = power(h, k, q)
     c2 = (msg * s) % q
     return c1, c2
 
-def decrypt(c2, c1, key, q):
+def decrypt_number(c2, c1, key, q):
+    """Decrypt a single number message"""
     s = power(c1, key, q)
     s_inv = pow(s, q - 2, q)
     decrypted_msg = (c2 * s_inv) % q
@@ -48,14 +50,25 @@ def text_to_numbers(text):
 def numbers_to_text(numbers):
     return ''.join(chr(n) for n in numbers)
 
-def encrypt_text(text, q, h, g):
-    numbers = text_to_numbers(text)
-    encrypted_text = [encrypt(number, q, h, g) for number in numbers]
-    return encrypted_text
+def encrypt_text_or_number(message, q, h, g):
+    """Encrypt either a text or a number message"""
+    if isinstance(message, int):
+        # If message is a number, encrypt directly
+        return [encrypt_number(message, q, h, g)]
+    else:
+        # If message is text, convert to numbers and encrypt each character
+        numbers = text_to_numbers(message)
+        return [encrypt_number(number, q, h, g) for number in numbers]
 
-def decrypt_text(encrypted_text, key, q):
+def decrypt_message(encrypted_message, key, q):
+    """Decrypt either a single number or a list of encrypted characters"""
     try:
-        decrypted_numbers = [decrypt(c2, c1, key, q) for c1, c2 in encrypted_text]
+        # Check if it's a single encrypted number
+        if len(encrypted_message) == 1 and isinstance(encrypted_message[0], tuple):
+            return decrypt_number(encrypted_message[0][1], encrypted_message[0][0], key, q)
+        
+        # If it's a list of encrypted characters, decrypt each
+        decrypted_numbers = [decrypt_number(c2, c1, key, q) for c1, c2 in encrypted_message]
         return numbers_to_text(decrypted_numbers)
     except Exception as e:
         print(f"Erreur de déchiffrement: {e}")
@@ -126,9 +139,9 @@ def receive_from_server(app):
                 # Handle encrypted message
                 encrypted_message = message_data['content']
                 encrypted_list = ast.literal_eval(encrypted_message)
-                decrypted_message = decrypt_text(encrypted_list, app.private_key, q)
+                decrypted_message = decrypt_message(encrypted_list, app.private_key, q)
                 # Use after to schedule GUI updates from other threads
-                app.after(0, lambda: app.chat_frame.add_message(decrypted_message, 
+                app.after(0, lambda: app.chat_frame.add_message(str(decrypted_message), 
                                                              encrypted_message, 
                                                              "reçu"))
                 
@@ -150,7 +163,7 @@ class MessageBubble(customtkinter.CTkFrame):
         # Message content
         self.message_label = customtkinter.CTkLabel(
             self,
-            text=f"{'Vous : ' if message_type == 'sent' else 'Ami'}: {(clear_text if message_type == 'sent' else encrypted_text)}",
+            text=f"{'Vous ' if message_type == 'sent' else 'Ami'} : {(clear_text if message_type == 'sent' else encrypted_text)}",
             wraplength=350,
             justify="left",
             text_color="white",
@@ -247,7 +260,13 @@ class SendFrame(customtkinter.CTkFrame):
         input_text = self.text_input.get("1.0", 'end-1c').strip()
         if input_text and self.master.other_public_key:
             try:
-                encrypted_msg = encrypt_text(input_text, q, self.master.other_public_key, g)
+                # Try to convert to int if possible, otherwise treat as text
+                try:
+                    numeric_input = int(input_text)
+                    encrypted_msg = encrypt_text_or_number(numeric_input, q, self.master.other_public_key, g)
+                except ValueError:
+                    encrypted_msg = encrypt_text_or_number(input_text, q, self.master.other_public_key, g)
+                
                 encrypted_msg_str = str(encrypted_msg)
                 
                 self.master.chat_frame.add_message(input_text, encrypted_msg_str, "sent")
@@ -302,7 +321,7 @@ class ChatApp(customtkinter.CTk):
 if __name__ == "__main__":
     app = ChatApp()
     
-    server_host = "192.168.1.9"
+    server_host = "127.0.0.1"
     server_port = 12345
     
     connect_to_server(server_host, server_port, app)
